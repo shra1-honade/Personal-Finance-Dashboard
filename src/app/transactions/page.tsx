@@ -1,5 +1,6 @@
 "use client";
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useFinance } from "@/lib/finance-store";
 import { CATEGORIES } from "@/lib/types";
 import { formatDate } from "@/lib/dates";
@@ -7,11 +8,12 @@ import { money } from "@/lib/format";
 
 const PAGE = 100;
 
-export default function TransactionsPage() {
+function TransactionsView() {
   const { data, loading, api, refresh } = useFinance();
   const [q, setQ] = useState("");
   const [category, setCategory] = useState("");
-  const [accountId, setAccountId] = useState("");
+  const params = useSearchParams();
+  const [accountId, setAccountId] = useState(params.get("account") ?? "");
   const [limit, setLimit] = useState(PAGE);
 
   const accounts = useMemo(() => new Map((data?.accounts ?? []).map((a) => [a.id, a])), [data]);
@@ -106,5 +108,14 @@ export default function TransactionsPage() {
         </button>
       )}
     </div>
+  );
+}
+
+export default function TransactionsPage() {
+  // useSearchParams needs a Suspense boundary for static rendering.
+  return (
+    <Suspense fallback={<div className="py-24 text-center text-muted">Loading…</div>}>
+      <TransactionsView />
+    </Suspense>
   );
 }

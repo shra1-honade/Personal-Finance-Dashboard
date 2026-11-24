@@ -1,70 +1,72 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { WIDGETS } from "@/widgets/registry";
+import { WIDGETS, WIDGETS_BY_ID } from "@/widgets/registry";
+import type { WidgetSettings } from "@/widgets/types";
 
 /**
- * Which widgets are shown, and in what order. Saved per browser in
- * localStorage. New widgets you add to the registry appear automatically.
+ * The dashboard layout: an ordered list of widget instances, each with its
+ * own settings. Saved in the database (GET/PUT /api/layout).
  */
+export interface LayoutItem {
+  /** Unique per instance. */
+  id: string;
+  /** Widget type id from the registry. */
+  type: string;
+  settings?: WidgetSettings;
+}
+
 export interface Layout {
-  order: string[];
-  hidden: string[];
+  items: LayoutItem[];
 }
 
-const KEY = "pf:layout:v1";
+const newId = (type: string) => `${type}-${Math.random().toString(36).slice(2, 8)}`;
 
-function defaults(): Layout {
-  return { order: WIDGETS.map((w) => w.id), hidden: WIDGETS.filter((w) => w.defaultVisible === false).map((w) => w.id) };
+export function defaultLayout(): Layout {
+  return { items: WIDGETS.filter((w) => w.defaultVisible !== false).map((w) => ({ id: w.id, type: w.id })) };
 }
 
-function reconcile(saved: Layout): Layout {
-  const known = new Set(WIDGETS.map((w) => w.id));
-  const order = saved.order.filter((id) => known.has(id));
-  const hidden = saved.hidden.filter((id) => known.has(id));
-  for (const w of WIDGETS) {
-    if (!order.includes(w.id)) {
-      order.push(w.id);
-      if (w.defaultVisible === false) hidden.push(w.id);
-    }
-  }
-  return { order, hidden };
+/** Drop widgets that no longer exist in the registry. */
+function clean(layout: Layout): Layout {
+  return { items: layout.items.filter((i) => WIDGETS_BY_ID.has(i.type)) };
 }
 
 export function useLayout() {
-  const [layout, setLayout] = useState<Layout>(defaults);
+  const [layout, setLayout] = useState<Layout | null>(null);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(KEY);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate from storage after mount
-      if (raw) setLayout(reconcile(JSON.parse(raw)));
-    } catch {
-      /* storage unavailable: keep defaults */
-    }
+    fetch("/api/layout", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((b: { layout: Layout | null }) => setLayout(b.layout ? clean(b.layout) : defaultLayout()))
+      .catch(() => setLayout(defaultLayout()));
   }, []);
 
   const save = useCallback((next: Layout) => {
     setLayout(next);
-    try {
-      localStorage.setItem(KEY, JSON.stringify(next));
-    } catch {
-      /* ignore */
-    }
+    void fetch("/api/layout", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(next) });
   }, []);
 
-  const toggle = (id: string) =>
-    save({ ...layout, hidden: layout.hidden.includes(id) ? layout.hidden.filter((h) => h !== id) : [...layout.hidden, id] });
+  const current = layout ?? defaultLayout();
 
-  const move = (id: string, dir: -1 | 1) => {
-    const order = [...layout.order];
-    const i = order.indexOf(id);
-    const j = i + dir;
-    if (i < 0 || j < 0 || j >= order.length) return;
-    [order[i], order[j]] = [order[j], order[i]];
-    save({ ...layout, order });
+  return {
+    layout: current,
+    ready: layout !== null,
+    add: (type: string) => {
+      const def = WIDGETS_BY_ID.get(type);
+      const id = def?.allowMultiple && current.items.some((i) => i.type === type) ? newId(type) : type;
+      // New widgets go to the top so you see them right away.
+      save({ items: [{ id, type, settings: def?.defaultSettings }, ...current.items] });
+    },
+    remove: (id: string) => save({ items: current.items.filter((i) => i.id !== id) }),
+    move: (id: string, toIndex: number) => {
+      const items = [...current.items];
+      const from = items.findIndex((i) => i.id === id);
+      if (from < 0) return;
+      const [item] = items.splice(from, 1);
+      items.splice(Math.max(0, Math.min(items.length, toIndex)), 0, item);
+      save({ items });
+    },
+    updateSettings: (id: string, patch: WidgetSettings) =>
+      save({ items: current.items.map((i) => (i.id === id ? { ...i, settings: { ...i.settings, ...patch } } : i)) }),
+    reset: () => save(defaultLayout()),
   };
-
-  const reset = () => save(defaults());
-
-  return { layout, toggle, move, reset };
 }

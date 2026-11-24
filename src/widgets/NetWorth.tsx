@@ -28,7 +28,6 @@ export default defineWidget({
   id: "net-worth",
   title: "Net worth",
   description: "Total assets minus liabilities, with 30-day change.",
-  size: "sm",
-  defaultVisible: true,
+  defaultVisible: false,
   component: NetWorth,
 });

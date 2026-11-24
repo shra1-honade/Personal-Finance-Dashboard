@@ -41,18 +41,20 @@ function parseAmount(s: string | undefined): number | null {
 
 /** Simple keyword rules for files without a category column. Extend as you like. */
 const RULES: [RegExp, string][] = [
+  [/credit card payment|card pmt|autopay|online pmt|payment thank you|epay/i, "Transfer"],
   [/payroll|salary|direct dep|paycheck|interest paid|dividend/i, "Income"],
-  [/rent|mortgage|hoa/i, "Housing"],
-  [/electric|power|water|gas co|utility|internet|comcast|verizon|at&t|t-mobile|phone/i, "Utilities"],
-  [/grocery|market|whole foods|trader joe|safeway|kroger|aldi|costco/i, "Groceries"],
-  [/restaurant|cafe|coffee|starbucks|pizza|grill|bar |doordash|uber eats|grubhub|mcdonald/i, "Dining"],
+  [/transfer|zelle|venmo/i, "Transfer"],
+  [/rent|electric|power|water|gas co|utility|internet|comcast|verizon|at&t|t-mobile|phone/i, "Rent and utilities"],
+  [/loan|mortgage|financial services/i, "Loan payments"],
+  [/insurance|geico|progressive|state farm|allstate/i, "Insurance"],
+  [/grocery|groceries|market|whole foods|trader joe|safeway|kroger|aldi|costco|restaurant|cafe|coffee|starbucks|pizza|grill|doordash|uber eats|grubhub|mcdonald/i, "Food and drink"],
   [/uber|lyft|shell|chevron|exxon|fuel|parking|transit|metro/i, "Transportation"],
-  [/netflix|spotify|hulu|disney|apple\.com|icloud|youtube|subscription/i, "Subscriptions"],
+  [/netflix|spotify|hulu|disney|youtube|cinema|movie|concert/i, "Entertainment"],
   [/amazon|target|walmart|best buy|store/i, "Shopping"],
-  [/pharmacy|cvs|walgreens|doctor|dental|clinic|gym|fitness/i, "Health"],
+  [/pharmacy|cvs|walgreens|doctor|dental|clinic/i, "Medical"],
+  [/gym|fitness|salon|barber|spa/i, "Personal care"],
   [/airline|hotel|airbnb|expedia/i, "Travel"],
-  [/payment|transfer|zelle|venmo/i, "Transfer"],
-  [/fee|charge/i, "Fees"],
+  [/fee\b|overdraft|membership fee/i, "Bank fees"],
 ];
 
 export function guessCategory(description: string): string {

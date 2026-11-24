@@ -41,7 +41,6 @@ export default defineWidget({
   id: "net-worth-trend",
   title: "Net worth over time",
   description: "Month-end net worth for the last 12 months.",
-  size: "lg",
-  defaultVisible: true,
+  defaultVisible: false,
   component: NetWorthTrend,
 });

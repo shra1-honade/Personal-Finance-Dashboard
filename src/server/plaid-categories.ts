@@ -1,35 +1,33 @@
 /**
  * Maps Plaid's personal_finance_category (primary / detailed) to this app's
- * categories. Edit freely — this is the one place categorisation rules live
+ * categories. Edit freely: this is the one place categorisation rules live
  * for linked accounts.
  */
 const DETAILED: Record<string, string> = {
-  FOOD_AND_DRINK_GROCERIES: "Groceries",
-  RENT_AND_UTILITIES_RENT: "Housing",
-  LOAN_PAYMENTS_MORTGAGE_PAYMENT: "Housing",
-  ENTERTAINMENT_TV_AND_MOVIES: "Subscriptions",
-  ENTERTAINMENT_MUSIC_AND_AUDIO: "Subscriptions",
-  GENERAL_SERVICES_INSURANCE: "Housing",
-  TRANSFER_IN_INVESTMENT_AND_RETIREMENT_FUNDS: "Transfer",
+  // Paying a card off moves money between your own accounts; the purchases were already counted.
+  LOAN_PAYMENTS_CREDIT_CARD_PAYMENT: "Transfer",
+  GENERAL_SERVICES_INSURANCE: "Insurance",
+  GENERAL_SERVICES_OTHER_GENERAL_SERVICES: "Other general services",
 };
 
 const PRIMARY: Record<string, string> = {
   INCOME: "Income",
   TRANSFER_IN: "Transfer",
   TRANSFER_OUT: "Transfer",
-  LOAN_PAYMENTS: "Transfer",
-  BANK_FEES: "Fees",
+  LOAN_PAYMENTS: "Loan payments",
+  LOAN_DISBURSEMENTS: "Transfer",
+  BANK_FEES: "Bank fees",
   ENTERTAINMENT: "Entertainment",
-  FOOD_AND_DRINK: "Dining",
+  FOOD_AND_DRINK: "Food and drink",
   GENERAL_MERCHANDISE: "Shopping",
-  HOME_IMPROVEMENT: "Housing",
-  MEDICAL: "Health",
+  HOME_IMPROVEMENT: "Home improvement",
+  MEDICAL: "Medical",
   PERSONAL_CARE: "Personal care",
-  GENERAL_SERVICES: "Other",
-  GOVERNMENT_AND_NON_PROFIT: "Other",
+  GENERAL_SERVICES: "General services",
+  GOVERNMENT_AND_NON_PROFIT: "Government and non-profit",
   TRANSPORTATION: "Transportation",
   TRAVEL: "Travel",
-  RENT_AND_UTILITIES: "Utilities",
+  RENT_AND_UTILITIES: "Rent and utilities",
 };
 
 export function mapPlaidCategory(primary?: string | null, detailed?: string | null): string {

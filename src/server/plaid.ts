@@ -79,6 +79,7 @@ function mapAccountType(a: AccountBase): AccountType {
     case "loan":
       return "loan";
     case "investment":
+      if (/crypto/i.test(sub)) return "crypto";
       return /401|403|457|ira|roth|pension|retirement|sep|simple|tsp|keogh/i.test(sub) ? "retirement" : "investment";
     default:
       return "checking";

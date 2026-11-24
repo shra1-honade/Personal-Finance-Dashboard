@@ -33,33 +33,44 @@ How it works:
 - `data/finance.db` holds your bank access tokens and transactions. It's git-ignored; don't share it.
 - Set `APP_PASSWORD` in `.env.local` whenever the app is reachable from another machine. Every page and API call then requires that password (HTTP Basic auth, any username).
 
+## The dashboard
+
+The default layout mirrors Claude's Personal Finance view: category tracker, top merchants, daily review, spending by category, investments, cash flow, cash and investments, insights, loans and cards, upcoming bills, recent transactions, budget, spending this month and subscriptions. Net worth, net worth over time and income vs spending are available from **Add widget**.
+
+- **Add widget** opens a gallery. Some widgets (like the category tracker) can be added more than once, each with its own settings.
+- Drag a card by its handle (⠿) to reorder it, or focus the handle and use Space, arrow keys, Space. Remove a card with ×.
+- The layout is saved in the database, so it follows you across devices.
+
+Bills, subscriptions and paychecks are detected from your history (`src/lib/recurring.ts`): the same payee at a steady weekly, biweekly, monthly, quarterly or yearly interval. Insights are plain rules in `insights()` in `src/lib/selectors.ts`; add your own there.
+
 ## Adding your own widget
 
 1. Create `src/widgets/MyWidget.tsx`:
 
    ```tsx
    import { defineWidget, type WidgetProps } from "./types";
-   import { spendingByCategory } from "@/lib/selectors";
+   import { totalSpending } from "@/lib/selectors";
    import { money } from "@/lib/format";
 
-   function MyWidget({ data, period }: WidgetProps) {
-     const dining = spendingByCategory(data, period).find((r) => r.category === "Dining");
-     return <div className="text-2xl font-semibold">{money(dining?.amount ?? 0)}</div>;
+   type Settings = { category: string };
+
+   function MyWidget({ data, period, settings }: WidgetProps<Settings>) {
+     return <div className="text-2xl font-semibold">{money(totalSpending(data, period, settings.category))}</div>;
    }
 
-   export default defineWidget({
-     id: "dining-total",          // stable id, saved in your layout
-     title: "Dining out",
-     description: "Total spent at restaurants in the selected period.",
-     size: "sm",                  // sm | md | lg | full
-     usesPeriod: true,            // follows the period picker
+   export default defineWidget<Settings>({
+     id: "category-total",              // stable id, saved in your layout
+     title: (s) => `${s.category} total`,
+     description: "Total spent in one category this month.",
+     allowMultiple: true,               // optional: can be added more than once
+     defaultSettings: { category: "Food and drink" },
      component: MyWidget,
    });
    ```
 
-2. Register it in `src/widgets/registry.ts`.
+2. Register it in `src/widgets/registry.ts`. Set `defaultVisible: false` if it should only appear in the gallery.
 
-It appears on the dashboard and in **Customize** (show/hide/reorder, saved per browser). Widgets receive all data (`accounts`, `transactions`, `budgets`, linked institutions) plus the selected period, so they need no fetching of their own. Reusable calculations live in `src/lib/selectors.ts`. A widget that throws shows an error in its own card instead of breaking the page.
+Widgets receive all data (`accounts`, `transactions`, `budgets`, linked institutions), the current month as `period`, and their own `settings` plus `updateSettings()`. Reusable calculations live in `src/lib/selectors.ts` and `src/lib/recurring.ts`. A widget that throws shows an error in its own card instead of breaking the page.
 
 ## Project layout
 
@@ -77,8 +88,8 @@ src/
 ## Data model
 
 - **Account**: `type` is checking, savings, credit, investment, retirement, loan, or cash. Liabilities are stored as negative balances.
-- **Transaction**: positive `amount` = money in, negative = money out. Category `Transfer` is excluded from income and spending (card payments, moving money between your accounts).
-- **Budget**: a monthly limit per category.
+- **Transaction**: positive `amount` = money in, negative = money out. Categories follow Plaid's names (Food and drink, Shopping, Loan payments, …). `Transfer` (card payments, moving money between your own accounts) is excluded from income and spending.
+- **Budget**: a monthly limit per category, plus an optional `All spending` limit for the whole month.
 
 Net worth history is reconstructed by walking back from today's balances through your transaction history.
 

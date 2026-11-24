@@ -183,3 +183,16 @@ export function updatePlaidItemSync(itemId: string, cursor: string | null, error
 export function deletePlaidItem(itemId: string) {
   db().prepare("DELETE FROM plaid_items WHERE item_id = ?").run(itemId);
 }
+
+/* ---------- app settings (dashboard layout etc.) ---------- */
+
+export function getSetting<T>(key: string): T | null {
+  const row = db().prepare("SELECT value FROM app_settings WHERE key = ?").get(key) as { value: string } | undefined;
+  return row ? (JSON.parse(row.value) as T) : null;
+}
+
+export function setSetting(key: string, value: unknown) {
+  db()
+    .prepare("INSERT INTO app_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+    .run(key, JSON.stringify(value));
+}

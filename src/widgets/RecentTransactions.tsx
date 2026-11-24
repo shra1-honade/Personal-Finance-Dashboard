@@ -1,35 +1,63 @@
+"use client";
 import Link from "next/link";
+import { useState } from "react";
 import { defineWidget, type WidgetProps } from "./types";
-import { formatDate } from "@/lib/dates";
 import { money } from "@/lib/format";
-import { Empty } from "./ui";
+import { Empty, relativeDay } from "./ui";
 
 function RecentTransactions({ data }: WidgetProps) {
-  const accounts = new Map(data.accounts.map((a) => [a.id, a.name]));
-  const rows = data.transactions.slice(0, 10);
-  if (!rows.length) return <Empty>No transactions yet</Empty>;
+  const [accountId, setAccountId] = useState<string>("");
+  const [limit, setLimit] = useState(6);
+  // Only accounts that actually have transactions get a chip.
+  const withTx = new Set(data.transactions.map((t) => t.accountId));
+  const chips = data.accounts.filter((a) => withTx.has(a.id));
+  const rows = data.transactions.filter((t) => !accountId || t.accountId === accountId);
+  if (!data.transactions.length) return <Empty>No transactions yet</Empty>;
+
+  const chip = (active: boolean) =>
+    `shrink-0 rounded-full border px-2.5 py-1 text-xs ${active ? "border-transparent bg-ink text-surface" : "border-line text-ink-2 hover:bg-surface-2"}`;
+
   return (
     <div>
+      <div className="-mx-1 mb-3 flex gap-1.5 overflow-x-auto px-1 pb-1">
+        <button className={chip(!accountId)} onClick={() => setAccountId("")}>
+          All
+        </button>
+        {chips.map((a) => (
+          <button key={a.id} className={chip(accountId === a.id)} onClick={() => setAccountId(a.id)}>
+            {a.name}
+            {a.mask ? ` ${a.mask}` : ""}
+          </button>
+        ))}
+      </div>
       <ul className="divide-y divide-line">
-        {rows.map((t) => (
-          <li key={t.id} className="flex items-center gap-3 py-2 text-sm">
-            <span className="w-14 shrink-0 text-xs text-muted">{formatDate(t.date)}</span>
-            <div className="min-w-0 flex-1">
-              <div className="truncate">
-                {t.description}
-                {t.pending && <span className="ml-1.5 rounded bg-surface-2 px-1 text-[11px] text-muted">Pending</span>}
-              </div>
-              <div className="truncate text-xs text-muted">
-                {t.category} · {accounts.get(t.accountId) ?? "Unknown account"}
+        {rows.slice(0, limit).map((t) => (
+          <li key={t.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+            <div className="min-w-0">
+              <div className="truncate">{t.description}</div>
+              <div className="text-xs text-muted">
+                {relativeDay(t.date)}
+                {t.pending ? " · Pending" : ""}
               </div>
             </div>
-            <span className={`tabular shrink-0 font-medium ${t.amount > 0 ? "text-positive" : ""}`}>{money(t.amount, { sign: true })}</span>
+            <span className={`tabular shrink-0 font-medium ${t.amount > 0 ? "text-positive" : ""}`}>
+              {t.amount > 0 ? money(t.amount, { sign: true }) : money(-t.amount)}
+            </span>
           </li>
         ))}
       </ul>
-      <Link href="/transactions" className="mt-2 inline-block text-sm text-accent hover:underline">
-        View all transactions →
-      </Link>
+      <div className="mt-2 flex justify-between text-sm">
+        {rows.length > limit ? (
+          <button onClick={() => setLimit(limit + 10)} className="text-accent hover:underline">
+            +{rows.length - limit} View more
+          </button>
+        ) : (
+          <span />
+        )}
+        <Link href={accountId ? `/transactions?account=${encodeURIComponent(accountId)}` : "/transactions"} className="text-accent hover:underline">
+          All transactions →
+        </Link>
+      </div>
     </div>
   );
 }
@@ -37,8 +65,6 @@ function RecentTransactions({ data }: WidgetProps) {
 export default defineWidget({
   id: "recent-transactions",
   title: "Recent transactions",
-  description: "Your latest 10 transactions across all accounts.",
-  size: "lg",
-  defaultVisible: true,
+  description: "Latest transactions, filterable by account.",
   component: RecentTransactions,
 });

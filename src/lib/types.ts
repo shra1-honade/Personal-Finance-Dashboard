@@ -3,7 +3,7 @@
  * three collections, so a widget never needs its own storage.
  */
 
-export type AccountType = "checking" | "savings" | "credit" | "investment" | "retirement" | "loan" | "cash";
+export type AccountType = "checking" | "savings" | "credit" | "investment" | "retirement" | "crypto" | "loan" | "cash";
 
 export interface Account {
   id: string;
@@ -67,30 +67,43 @@ export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   checking: "Checking",
   savings: "Savings",
   credit: "Credit cards",
-  investment: "Investments",
+  investment: "Brokerage",
   retirement: "Retirement",
+  crypto: "Crypto",
   loan: "Loans",
   cash: "Cash",
 };
 
-/** Categories that move money between your own accounts. Excluded from income and spending. */
+/** Categories that move money between your own accounts (incl. credit card payments). Excluded from income and spending. */
 export const TRANSFER_CATEGORY = "Transfer";
 export const INCOME_CATEGORY = "Income";
+/** Budget row that limits total monthly spending. */
+export const ALL_SPENDING = "All spending";
 
+/**
+ * Category names follow Plaid's personal finance categories, so linked
+ * accounts need no translation. See src/server/plaid-categories.ts.
+ */
 export const CATEGORIES = [
   INCOME_CATEGORY,
-  "Housing",
-  "Utilities",
-  "Groceries",
-  "Dining",
-  "Transportation",
+  "Food and drink",
   "Shopping",
-  "Entertainment",
-  "Subscriptions",
-  "Health",
+  "Rent and utilities",
+  "Loan payments",
+  "Insurance",
+  "Transportation",
   "Travel",
+  "Entertainment",
+  "Medical",
   "Personal care",
-  "Fees",
+  "Home improvement",
+  "General services",
+  "Other general services",
+  "Government and non-profit",
+  "Bank fees",
   "Other",
   TRANSFER_CATEGORY,
 ] as const;
+
+export const ASSET_TYPES: AccountType[] = ["checking", "savings", "cash", "investment", "crypto", "retirement"];
+export const INVESTMENT_TYPES: AccountType[] = ["investment", "crypto", "retirement"];

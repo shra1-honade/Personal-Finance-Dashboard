@@ -3,7 +3,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useFinance } from "@/lib/finance-store";
-import { PlaidLinkButton } from "./PlaidLinkButton";
 
 const NAV = [
   { href: "/", label: "Dashboard" },
@@ -57,7 +56,6 @@ export function AppHeader() {
               {syncing ? "Syncing…" : "Sync now"}
             </button>
           )}
-          <PlaidLinkButton />
         </div>
       </div>
     </header>
